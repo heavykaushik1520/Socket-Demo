@@ -1,0 +1,17 @@
+{
+  "name": "socketdemo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.1",
+    "node-emoji": "^2.1.3",
+    "socket.io": "^4.7.5"
+  }
+}

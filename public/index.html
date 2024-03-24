@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat APP</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color:black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            background-image: radial-gradient(circle, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 30%, rgba(0,0,0,0.05) 100%);
+        }
+
+       .container {
+            width: 400px;
+            background-color: #222222;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+       .header {
+            background-color: #ff8800;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #ffffff;
+        }
+
+       .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        #messages {
+            padding: 10px;
+            background-color: #222222;
+            overflow-y: auto;
+            max-height: 300px;
+            color: #ffffff;
+        }
+
+       .message-container {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+       .message {
+            padding: 10px 20px;
+            border-radius: 10px;
+            word-wrap: break-word;
+            max-width: 70%;
+            margin-bottom: 5px;
+            transition: background-color 0.3s, transform 0.3s;
+            background-color: #ff8800;
+        }
+
+       .received {
+            background-color: #ffaa33;
+            color: #000000;
+            align-self: flex-start;
+            margin-left: 0;
+            margin-right: auto;
+            transform: translateX(-10px);
+        }
+
+       .sender {
+            background-color: #222222;
+            color: #ffffff;
+            align-self: flex-end;
+            margin-left: auto;
+            margin-right: 0;
+            transform: translateX(10px);
+        }
+
+       .message p {
+            margin: 0;
+        }
+
+        #message {
+            width: calc(100% - 80px);
+            padding: 10px;
+            border: 1px solid #ffffff;
+            border-radius: 5px;
+            margin-right: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease-in-out;
+            background-color: #222222;
+            color: #ffffff;
+        }
+
+        #message:focus {
+            border-color: #ff8800;
+            outline: none;
+        }
+
+        #sendBtn {
+            padding: 10px 20px;
+            border: none;
+            background-color: #ff8800;
+            color: #060606;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        #sendBtn:hover {
+            background-color: #cc6600;
+        }
+
+       .time {
+            font-size: 12px;
+            color: #ff8800;
+            margin-left: 10px;
+            margin-top: 5px;
+        }
+
+       .typing {
+            font-size: 12px;
+            color: #ff8800;
+            margin-left: 10px;
+            margin-top: 5px;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+       .message {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @media only screen and (max-width: 480px) {
+           .container {
+                width: 90%;
+            }
+        }
+
+        #typingIndicator {
+            position: relative;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        #typingIndicator .typing {
+           font-size: 12px;
+           color: #ff8800;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chatting</h1>
+        </div>
+        <div id="messages"></div>
+        <div id="typingIndicator"></div> <!-- Typing indicator container above the message input -->
+        <div class="message-container">
+            <input type="text" id="message" placeholder="Enter Message">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const sendBtn = document.getElementById("sendBtn");
+    const messageInput = document.getElementById("message");
+    const allMessages = document.getElementById("messages");
+    const typingIndicatorContainer = document.getElementById("typingIndicator");
+    const typingIndicator = document.createElement("div");
+    typingIndicator.className = "typing";
+    typingIndicator.innerText = "typing...";
+    let typingTimeout;
+
+    socket.on("message", (data) => {
+        clearTypingIndicator();
+        const { message, sender, time } = data;
+        const messageElement = document.createElement("div");
+        messageElement.className = "message-container";
+        const messageBox = document.createElement("div");
+        messageBox.innerHTML = message;
+        messageBox.className = "message";
+        const timeElement = document.createElement("span");
+        timeElement.className = "time";
+        timeElement.innerText = time;
+        messageElement.appendChild(messageBox);
+        messageElement.appendChild(timeElement);
+        if (sender === 'user1') {
+            messageElement.classList.add('received');
+        } else {
+            messageElement.classList.add('sender');
+        }
+        allMessages.appendChild(messageElement);
+        allMessages.scrollTop = allMessages.scrollHeight; // Scroll to bottom
+    });
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    messageInput.addEventListener("input", function(event) {
+        if (!typingTimeout) {
+            socket.emit("typing", { typing: true });
+        }
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            socket.emit("typing", { typing: false });
+            typingTimeout = null;
+        }, 1000);
+    });
+
+    function sendMessage() {
+        const message = messageInput.value;
+        if (message.trim() !== "") {
+            clearTypingIndicator();
+            const currentDate = new Date();
+            const time = currentDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+            socket.emit("user-message", { message, sender: 'user2', time });
+            messageInput.value = "";
+        }
+    }
+
+    function clearTypingIndicator() {
+        const typingElement = document.querySelector(".typing");
+        if (typingElement) {
+            typingElement.remove();
+        }
+    }
+
+    socket.on("typing", (data) => {
+        clearTypingIndicator();
+        if (data.typing) {
+            const typingElement = document.createElement("div");
+            typingElement.className = "typing";
+            typingElement.innerText = "sender typing...";
+            typingIndicatorContainer.innerHTML = ''; // Clear previous indicator
+            typingIndicatorContainer.appendChild(typingElement);
+
+        }
+    });
+</script>
+</body>
+</html>
